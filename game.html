@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Summit Rush</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: forestgreen;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: black;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 26px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #c8831a;
+      margin-bottom: 8px;
+    }
+
+    #ui-bar {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .stat-label { color: #8b8560; margin-right: 4px; }
+    #alt-val    { color: #a8c8e8; }
+    #best-val   { color: #c8831a; }
+
+    #canvas-wrapper {
+      position: relative;
+      border: 2px solid #3d4a2e;
+    }
+
+    canvas { display: block; image-rendering: pixelated; }
+
+    /* Overlay */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10,10,15,0.90);
+      gap: 14px;
+    }
+
+    #overlay h2 {
+      font-size: 22px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #c8831a;
+    }
+
+    #overlay p {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: #8b8560;
+      text-align: center;
+      line-height: 1.9;
+    }
+
+    #final-score {
+      font-size: 15px;
+      color: #e8e4d9;
+      letter-spacing: 0.1em;
+      display: none;
+    }
+
+    #start-btn {
+      padding: 11px 36px;
+      background: #c8831a;
+      color: #0a0a0f;
+      border: none;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    #start-btn:hover { background: #e09a30; }
+
+    #back-link {
+      margin-top: 12px;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: #3d4a2e;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    #back-link:hover { color: #8b8560; }
+  </style>
+</head>
+<body>
+
+<h1>⛰ Summit Rush</h1>
+
+<div id="ui-bar">
+  <div><span class="stat-label">Alt</span><span id="alt-val">0</span>m</div>
+  <div><span class="stat-label">Best</span><span id="best-val">0</span>m</div>
+</div>
+
+<div id="canvas-wrapper">
+  <canvas id="gameCanvas" width="360" height="520"></canvas>
+
+  <div id="overlay">
+    <h2 id="overlay-title">Summit Rush</h2>
+    <p id="overlay-desc">
+      Climb as high as you can.<br>
+      Dodge the falling rocks.<br>
+      Don't fall off the screen.
+    </p>
+    <p id="final-score"></p>
+    <button id="start-btn">Start Climb</button>
+    <p>WASD or Arrow Keys</p>
+  </div>
+</div>
+
+<a href="<!Doctype html>.html" id="back-link">← Back to Scratch Page</a>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ── Palette ──
+const C = {
+  skyTop:    '#0d1a2e',
+  skyBot:    '#1e3a5a',
+  rockDark:  '#2a2520',
+  rockMid:   '#3a3530',
+  ledge:     '#5a5248',
+  ledgeTop:  '#7a6e5a',
+  snow:      '#c8d8e8',
+  climber:   '#c8831a',
+  helmet:    '#c83a1a',
+  pants:     '#2a2a3a',
+  boulder:   '#4a3a28',
+  boulderHi: '#6a5a48',
+  particle:  '#c87a3a',
+};
+
+let best = 0;
+let S    = null;
+
+// ── Game state factory ──
+function newGame() {
+  const s = {
+    running: true,
+    dead:    false,
+    // Player in world coords
+    px: W / 2,
+    py: 0,          // world Y; 0 = start, negative = higher up
+    vx: 0,
+    vy: 0,
+    onGround: false,
+    // Camera: worldY of the top-left pixel
+    camY: -(H - 60), // show bottom of world initially
+    altitude: 0,
+    ledges:   [],
+    boulders: [],
+    particles:[],
+    keys:     {},
+    frame:    0,
+    spawnTimer: 0,
+    // Difficulty: increases with altitude
+    get spawnInterval() { return Math.max(55, 160 - s.altitude * 1.5); },
+    get boulderSpeed()  { return 2.0 + s.altitude * 0.03; },
+  };
+
+  // Seed ledges: starting platform + a dense ladder of platforms
+  // World Y: 0 = start ground. Negative = upward (higher altitude).
+  s.ledges.push({ x: W/2 - 70, y: 0, w: 140 }); // starting floor
+
+  for (let i = 1; i <= 40; i++) {
+    addLedge(s, -i * 55);
+  }
+
+  // Place player on starting platform
+  s.py = 0;
+  s.camY = -(H - 80);
+
+  return s;
+}
+
+// ── Ledge helpers ──
+function addLedge(s, worldY) {
+  // Width 60–110px, positioned so gaps are always jumpable
+  const w = 60 + Math.random() * 50;
+  const x = 15 + Math.random() * (W - w - 30);
+  s.ledges.push({ x, y: worldY, w, snow: Math.random() > 0.55 });
+}
+
+// ── Physics constants ──
+const GRAVITY   = 0.5;
+const JUMP_VY   = -10;
+const MOVE_SPD  = 3.2;
+
+// ── Update ──
+function update(s) {
+  if (!s.running) return;
+  s.frame++;
+
+  // Input
+  const left  = s.keys['ArrowLeft']  || s.keys['a'] || s.keys['A'];
+  const right = s.keys['ArrowRight'] || s.keys['d'] || s.keys['D'];
+  const jump  = s.keys['ArrowUp']    || s.keys['w'] || s.keys['W'];
+
+  s.vx = left ? -MOVE_SPD : right ? MOVE_SPD : 0;
+
+  if (jump && s.onGround) {
+    s.vy = JUMP_VY;
+    s.onGround = false;
+    burst(s, s.px, s.py);
+  }
+
+  s.vy += GRAVITY;
+  s.px += s.vx;
+  s.py += s.vy;
+
+  // Wall clamp
+  s.px = Math.max(10, Math.min(W - 10, s.px));
+
+  // ── Ledge collision (only falling downward) ──
+  s.onGround = false;
+  if (s.vy >= 0) {
+    for (const l of s.ledges) {
+      const screenPY = s.py - s.camY;
+      const screenLY = l.y  - s.camY;
+      if (
+        s.px >= l.x - 4 && s.px <= l.x + l.w + 4 &&
+        screenPY >= screenLY - 4 && screenPY <= screenLY + 12
+      ) {
+        s.py = l.y;
+        s.vy = 0;
+        s.onGround = true;
+        break;
+      }
+    }
+  }
+
+  // ── Scroll camera up as player climbs ──
+  const screenPY = s.py - s.camY;
+  if (screenPY < H * 0.45) {
+    const push = H * 0.45 - screenPY;
+    s.camY -= push;
+    s.altitude += push * 0.05;
+    document.getElementById('alt-val').textContent = Math.floor(s.altitude);
+  }
+
+  // Extend ledges ahead of camera
+  const highestLedge = s.ledges.reduce((m, l) => Math.min(m, l.y), 0);
+  while (highestLedge > s.camY - H) {
+    addLedge(s, highestLedge - 50 - Math.random() * 30);
+  }
+  // Cull old ledges below screen
+  s.ledges = s.ledges.filter(l => l.y - s.camY < H + 60);
+
+  // ── Boulder spawning ──
+  s.spawnTimer++;
+  if (s.spawnTimer >= s.spawnInterval) {
+    s.spawnTimer = 0;
+    s.boulders.push({
+      x:  20 + Math.random() * (W - 40),
+      y:  s.camY - 30,          // spawn just above camera
+      vy: s.boulderSpeed + Math.random() * 1.5,
+      vx: (Math.random() - 0.5) * 1.5,
+      r:  7 + Math.random() * 7,
+    });
+  }
+
+  // Update boulders
+  for (const b of s.boulders) {
+    b.y += b.vy;
+    b.x += b.vx;
+    if (b.x < b.r || b.x > W - b.r) b.vx *= -1;
+
+    // Hit player?
+    const dx = s.px - b.x;
+    const dy = (s.py - s.camY) - (b.y - s.camY);
+    if (Math.hypot(dx, dy) < b.r + 9) {
+      burst(s, s.px, s.py, 12);
+      die(s);
+      return;
+    }
+  }
+  // Cull boulders below screen
+  s.boulders = s.boulders.filter(b => b.y - s.camY < H + 40);
+
+  // Fall off bottom = death
+  if (s.py - s.camY > H + 30) {
+    die(s);
+    return;
+  }
+
+  // Particles
+  s.particles = s.particles.filter(p => p.life > 0);
+  for (const p of s.particles) {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.05;
+  }
+}
+
+// ── Die ──
+function die(s) {
+  s.running = false;
+  s.dead    = true;
+  if (s.altitude > best) best = Math.floor(s.altitude);
+  document.getElementById('best-val').textContent = best;
+  document.getElementById('overlay-title').textContent = 'You Fell';
+  document.getElementById('overlay-desc').textContent  = 'The mountain wins this time.';
+  const fs = document.getElementById('final-score');
+  fs.textContent = `↑ ${Math.floor(s.altitude)} m reached`;
+  fs.style.display = 'block';
+  document.getElementById('start-btn').textContent = 'Try Again';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+// ── Particles ──
+function burst(s, wx, wy, n = 6) {
+  for (let i = 0; i < n; i++) {
+    s.particles.push({
+      x: wx, y: wy - s.camY,
+      vx: (Math.random() - 0.5) * 5,
+      vy: -1 - Math.random() * 3,
+      life: 1,
+    });
+  }
+}
+
+// ── Draw ──
+function draw(s) {
+  // Sky
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, C.skyTop);
+  g.addColorStop(1, C.skyBot);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // Rock texture
+  const ts = 20;
+  for (let ty = 0; ty < H; ty += ts) {
+    for (let tx = 0; tx < W; tx += ts) {
+      const seed = (Math.floor((ty + s.camY) / ts) * 37 + Math.floor(tx / ts) * 13) % 9;
+      if (seed < 4) {
+        ctx.fillStyle = seed < 2 ? C.rockDark : C.rockMid;
+        ctx.fillRect(tx, ty, ts - 1, ts - 1);
+      }
+    }
+  }
+
+  // Ledges
+  for (const l of s.ledges) {
+    const sy = l.y - s.camY;
+    if (sy < -20 || sy > H + 20) continue;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(l.x + 4, sy + 5, l.w, 10);
+    // Body
+    ctx.fillStyle = C.ledge;
+    ctx.fillRect(l.x, sy, l.w, 10);
+    // Highlight
+    ctx.fillStyle = C.ledgeTop;
+    ctx.fillRect(l.x, sy, l.w, 3);
+    // Snow
+    if (l.snow) {
+      ctx.fillStyle = C.snow;
+      ctx.fillRect(l.x + 2, sy - 4, l.w - 4, 5);
+    }
+  }
+
+  // Boulders
+  for (const b of s.boulders) {
+    const sy = b.y - s.camY;
+    if (sy < -30 || sy > H + 30) continue;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(b.x + 3, sy + b.r * 0.6 + 4, b.r, b.r * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = C.boulder;
+    ctx.beginPath();
+    const sides = 7;
+    for (let i = 0; i < sides; i++) {
+      const a = (i / sides) * Math.PI * 2 - Math.PI / 2;
+      const jr = 0.75 + ((b.x * i * 7) % 25) / 100;
+      i === 0
+        ? ctx.moveTo(b.x + Math.cos(a) * b.r * jr, sy + Math.sin(a) * b.r * jr)
+        : ctx.lineTo(b.x + Math.cos(a) * b.r * jr, sy + Math.sin(a) * b.r * jr);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = C.boulderHi;
+    ctx.beginPath();
+    ctx.ellipse(b.x - b.r * 0.25, sy - b.r * 0.2, b.r * 0.28, b.r * 0.18, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Particles
+  for (const p of s.particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = C.particle;
+    ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+
+  // Climber
+  const cx = s.px;
+  const cy = s.py - s.camY;
+  const moving = Math.abs(s.vx) > 0.2;
+  const f = S.frame;
+
+  // Rope
+  ctx.strokeStyle = 'rgba(200,180,140,0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  for (let i = 1; i <= 4; i++) {
+    ctx.lineTo(cx + Math.sin(f * 0.08 + i) * 6, cy + i * 16);
+  }
+  ctx.stroke();
+
+  // Body
+  ctx.fillStyle = C.climber;
+  ctx.fillRect(cx - 5, cy - 16, 10, 11);
+  // Head
+  ctx.fillStyle = '#e8c898';
+  ctx.fillRect(cx - 4, cy - 25, 8, 8);
+  // Helmet
+  ctx.fillStyle = C.helmet;
+  ctx.fillRect(cx - 5, cy - 27, 10, 5);
+  // Legs
+  ctx.fillStyle = C.pants;
+  const ls = moving ? Math.sin(f * 0.28) * 3 : 0;
+  ctx.fillRect(cx - 5, cy - 5, 4, 10 + ls);
+  ctx.fillRect(cx + 1, cy - 5, 4, 10 - ls);
+  // Arms
+  ctx.fillStyle = C.climber;
+  const as = moving ? Math.sin(f * 0.28) * 3 : 0;
+  ctx.fillRect(cx - 10, cy - 13 + as, 6, 3);
+  ctx.fillRect(cx + 4,  cy - 13 - as, 6, 3);
+  // Ice axe
+  ctx.fillStyle = C.snow;
+  ctx.fillRect(cx + 9,  cy - 15 - as, 2, 6);
+  ctx.fillRect(cx + 7,  cy - 15 - as, 6, 2);
+
+  // Altitude badge (top-left)
+  ctx.fillStyle = 'rgba(10,10,15,0.55)';
+  ctx.fillRect(4, 4, 72, 20);
+  ctx.fillStyle = '#a8c8e8';
+  ctx.font = '11px Courier New';
+  ctx.fillText(`↑ ${Math.floor(s.altitude)}m`, 10, 18);
+
+  // Danger warning when boulder is close
+  for (const b of s.boulders) {
+    if (Math.abs(b.x - s.px) < 60 && b.y - s.camY < cy - 20 && b.y - s.camY > 0) {
+      ctx.fillStyle = 'rgba(200,60,20,0.18)';
+      ctx.fillRect(0, 0, W, H);
+      break;
+    }
+  }
+}
+
+// ── Loop ──
+function loop() {
+  if (S && S.running) update(S);
+  if (S) draw(S);
+  requestAnimationFrame(loop);
+}
+
+// ── Input ──
+window.addEventListener('keydown', e => {
+  if (S) S.keys[e.key] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { if (S) S.keys[e.key] = false; });
+
+// ── Start button ──
+document.getElementById('start-btn').addEventListener('click', () => {
+  S = newGame();
+  document.getElementById('alt-val').textContent  = '0';
+  document.getElementById('final-score').style.display = 'none';
+  document.getElementById('overlay').style.display = 'none';
+});
+
+// Draw a static frame before game starts
+S = newGame();
+S.running = false;
+draw(S);
+S = null;
+
+loop();
+</script>
+</body>
+</html>

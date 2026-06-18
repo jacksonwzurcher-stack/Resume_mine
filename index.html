@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jackson Zurcher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #0A0A0A;
+      --dark:    #111210;
+      --surface: #1A1C18;
+      --olive:   #3D4A2E;
+      --khaki:   #8B8560;
+      --off-white: #E8E4D9;
+      --amber:   #C8831A;
+      --rule:    rgba(232,228,217,0.10);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--off-white);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── UTILITY ─── */
+    .label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--khaki);
+    }
+
+    .rule { border: none; border-top: 1px solid var(--rule); }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 48px;
+      background: rgba(10,10,10,0.88);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-wordmark {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--off-white);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--khaki);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--off-white); }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding-top: 72px;
+    }
+
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 48px 80px 48px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 1px;
+      background: var(--amber);
+    }
+
+    .hero-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(64px, 7vw, 104px);
+      font-weight: 900;
+      line-height: 0.88;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: var(--off-white);
+      margin-bottom: 32px;
+    }
+
+    .hero-name em {
+      display: block;
+      font-style: normal;
+      color: var(--amber);
+    }
+
+    .hero-bio {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--khaki);
+      max-width: 420px;
+      line-height: 1.75;
+      margin-bottom: 40px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--khaki);
+      border: 1px solid var(--olive);
+      padding: 5px 12px;
+    }
+
+    /* ─── HERO RIGHT: STAT PANEL ─── */
+    .hero-right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-banner {
+      flex: 1;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px 48px;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-banner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--amber);
+    }
+
+    .stat-number {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(72px, 9vw, 120px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--off-white);
+    }
+
+    .stat-unit {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+
+    .stat-desc {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--khaki);
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .profile-panel {
+      background: var(--olive);
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      min-height: 260px;
+    }
+
+    .profile-panel img {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      object-position: center top;
+      filter: grayscale(60%) contrast(1.1);
+      display: block;
+    }
+
+    /* ─── SECTIONS COMMON ─── */
+    section {
+      padding: 80px 48px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .section-index {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--amber);
+    }
+
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--off-white);
+    }
+
+    /* ─── OBJECTIVES ─── */
+    #objectives {
+      background: var(--dark);
+    }
+
+    .objectives-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+    }
+
+    .objective-cell {
+      background: var(--black);
+      padding: 32px 28px;
+    }
+
+    .objective-cell .label {
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .objective-cell p {
+      font-size: 15px;
+      color: var(--off-white);
+      font-weight: 300;
+      line-height: 1.65;
+    }
+
+    /* ─── RECORD / ACCOMPLISHMENTS ─── */
+    #record { background: var(--black); }
+
+    .record-list { display: flex; flex-direction: column; }
+
+    .record-item {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      padding: 28px 0;
+      border-top: 1px solid var(--rule);
+      align-items: start;
+    }
+
+    .record-item:last-child { border-bottom: 1px solid var(--rule); }
+
+    .record-meta { display: flex; flex-direction: column; gap: 6px; }
+
+    .record-org {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--off-white);
+    }
+
+    .record-detail {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--khaki);
+      line-height: 1.65;
+    }
+
+    /* ─── CAPABILITIES ─── */
+    #capabilities { background: var(--dark); }
+
+    .cap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+    }
+
+    .cap-cell {
+      background: var(--black);
+      padding: 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cap-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--off-white);
+    }
+
+    .cap-desc {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--khaki);
+      line-height: 1.6;
+    }
+
+    /* ─── CONTACT ─── */
+    #contact {
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .contact-line {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(36px, 5vw, 60px);
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--off-white);
+      line-height: 1;
+    }
+
+    .contact-line em {
+      font-style: normal;
+      color: var(--amber);
+    }
+
+    .contact-sub {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--khaki);
+      max-width: 440px;
+      line-height: 1.7;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      margin-top: 8px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--amber);
+      padding: 14px 36px;
+      text-decoration: none;
+      border: 2px solid var(--amber);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .cta-btn:hover {
+      background: transparent;
+      color: var(--amber);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 24px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-mark {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--olive);
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+
+      #hero { grid-template-columns: 1fr; min-height: unset; }
+      .hero-left { padding: 60px 24px 40px; border-right: none; border-bottom: 1px solid var(--rule); }
+      .hero-right { flex-direction: column-reverse; }
+      .profile-panel img { height: 220px; }
+
+      section { padding: 60px 24px; }
+      .objectives-grid { grid-template-columns: 1fr; }
+      .cap-grid { grid-template-columns: 1fr; }
+      .record-item { grid-template-columns: 1fr; gap: 12px; }
+      footer { padding: 20px 24px; flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <span class="nav-wordmark">J. Zurcher</span>
+    <ul class="nav-links">
+      <li><a href="<!Doctype html>.html">Gear List</a></li>
+      <li><a href="game.html">Play Summit Rush</a></li>
+      <li><a href="#objectives">Profile</a></li>
+      <li><a href="#record">Record</a></li>
+      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero" style="padding:0; border-bottom: 1px solid var(--rule);">
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        <span class="label">BYU · Provo, Utah · Class of 2028</span>
+      </div>
+      <h1 class="hero-name">
+        Jackson<br>
+        <em>Zurcher</em>
+      </h1>
+      <p class="hero-bio">
+        Entrepreneurship student, agentic systems builder, and excavation laborer. White Māori. I finish things — from the foundation up.
+      </p>
+      <div class="hero-tags">
+        <span class="tag">Entrepreneurship</span>
+        <span class="tag">Finance</span>
+        <span class="tag">Real Estate</span>
+        <span class="tag">AI Systems</span>
+        <span class="tag">Rock Climbing</span>
+        <span class="tag">Mountaineering</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="stat-banner">
+        <span class="stat-number">20K</span>
+        <span class="stat-unit">lbs / day</span>
+        <p class="stat-desc">Dirt moved by hand on a single shift. Physical capacity is a proxy for everything else.</p>
+      </div>
+      <div class="profile-panel">
+        <img src="https://media.cntraveler.com/photos/5a1f16688c269e7b6c373381/1:1/w_800%2Cc_limit/09-half-dome-GettyImages-506319288.jpg" alt="Jackson Zurcher" />
+      </div>
+    </div>
+  </section>
+
+  <!-- OBJECTIVES -->
+  <section id="objectives">
+    <div class="section-header">
+      <span class="section-index">// 01</span>
+      <h2 class="section-title">Profile</h2>
+    </div>
+    <div class="objectives-grid">
+      <div class="objective-cell">
+        <span class="label">Academic</span>
+        <p>Sophomore pursuing a B.S. in Entrepreneurship at BYU, graduating 2028. Finalist in BYU's LBO Competition. Building the tools and frameworks to operate in business, finance, and real estate at an elite level.</p>
+      </div>
+      <div class="objective-cell">
+        <span class="label">Operational</span>
+        <p>Full-time laborer in excavation and site work. Comfortable with high-intensity, high-stakes physical environments. Currently contributed groundwork to Utah City development.</p>
+      </div>
+      <div class="objective-cell">
+        <span class="label">Personal</span>
+        <p>White Māori heritage. Active in BYU and church community. When not in class or on site, I'm on a wall or a ridge line — rock climbing and mountaineering are my reset.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECORD -->
+  <section id="record">
+    <div class="section-header">
+      <span class="section-index">// 02</span>
+      <h2 class="section-title">Record</h2>
+    </div>
+    <div class="record-list">
+      <div class="record-item">
+        <div class="record-meta">
+          <span class="record-org">AI Startup</span>
+          <span class="label">Founder</span>
+        </div>
+        <p class="record-detail">Founded and operated an AI startup from zero. Successfully shipped two major agentic systems end-to-end. Short-lived — built for learning and proof, not longevity. Both systems worked.</p>
+      </div>
+      <div class="record-item">
+        <div class="record-meta">
+          <span class="record-org">BYU LBO</span>
+          <span class="label">Finalist · Finance Competition</span>
+        </div>
+        <p class="record-detail">Competed as a finalist in BYU's Leveraged Buyout competition as a sophomore. Modeled acquisition structures and capital stacks against the best finance students at the university.</p>
+      </div>
+      <div class="record-item">
+        <div class="record-meta">
+          <span class="record-org">Utah City</span>
+          <span class="label">Site Work · Excavation</span>
+        </div>
+        <p class="record-detail">Completed foundational groundwork on the Utah City development — one of the largest mixed-use projects in Utah. Hands-on labor at scale. The literal foundation of something built to last.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAPABILITIES -->
+  <section id="capabilities">
+    <div class="section-header">
+      <span class="section-index">// 03</span>
+      <h2 class="section-title">Capabilities</h2>
+    </div>
+    <div class="cap-grid">
+      <div class="cap-cell">
+        <span class="cap-name">AI & Agentic Systems</span>
+        <p class="cap-desc">Proficient in building, deploying, and evaluating AI systems and agentic pipelines. Comfortable with modern tooling and integration frameworks.</p>
+      </div>
+      <div class="cap-cell">
+        <span class="cap-name">Finance & Modeling</span>
+        <p class="cap-desc">LBO modeling, capital structure analysis, and deal evaluation. Applied in direct competition against BYU's finance student body.</p>
+      </div>
+      <div class="cap-cell">
+        <span class="cap-name">Site & Field Work</span>
+        <p class="cap-desc">High-output manual labor in excavation environments. 20,000+ lbs of material moved in a single shift. Disciplined in physically demanding conditions.</p>
+      </div>
+      <div class="cap-cell">
+        <span class="cap-name">Real Estate & Development</span>
+        <p class="cap-desc">Active interest in real estate fundamentals and development cycles, reinforced by direct participation in large-scale Utah site work.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="section-header">
+      <span class="section-index">// 04</span>
+      <h2 class="section-title">Contact</h2>
+    </div>
+    <p class="contact-line">Ready to <em>Build.</em></p>
+    <p class="contact-sub">Whether it's a project, a partnership, or a conversation about business, finance, or real estate — reach out. I respond to people who are serious.</p>
+    <a class="cta-btn" href="mailto:jackson@example.com">Get in Touch</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span class="footer-mark">Jackson Zurcher · BYU · Est. 2006</span>
+    <span class="footer-mark">Provo, Utah</span>
+  </footer>
+
+</body>
+</html>
